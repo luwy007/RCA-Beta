@@ -13,8 +13,9 @@ for prediction, FileInput transforms data into features
 '''
 
 import xlrd
+import xlwt
 import numpy as np
-
+import os
 class FileInput():
     '''
     给Train和Predict提供良好的数据读取接口
@@ -24,8 +25,53 @@ class FileInput():
     def __init__(self):
         pass
 
+    def DataPreprocess(self, fileName = "sample data"):
+        '''
+        #对数据进行下述预处理：（去噪，数据转存）
+        1）记录包含NIL的列信息，如果NIL个数不超过总样本数的2%，则利用众数代替。否则以全零代替（消除该特征对接下来的模型训练预测产生影响）
+        2）将预处理的数据重新写到"tempdata//%s.xls"%fileName文件中
+        
+        #注意：
+        #在dataPreprocess之后，tempdata中的数据应该不存在噪声（即NIL），但是应该存在着众多的“最终无关项”。在beta1版本中需要对此多加注意
+        
+        '''
+        try:
+            book = xlrd.open_workbook(fileName+".xls")
+        except Exception as e:
+            print(e)
+            return 
+        sheet = book.sheet_by_index(0)
+        
+        os.makedirs("tempdata",exist_ok=True)
+        book = xlwt.Workbook()
+        outputSheet = book.add_sheet("tempSheet")
+        
+        for colIndex in range(sheet.ncols):
+            NILCount = 0
+            itemDic = {} #列元素，方便查找众数
+            for rowIndex in range(sheet.nrows):
+                if(sheet.cell_value(rowIndex,colIndex)=="NIL"):
+                    NILCount += 1
+                else:
+                    try:
+                        itemDic[sheet.cell_value(rowIndex,colIndex)] += 1
+                    except:
+                        itemDic[sheet.cell_value(rowIndex,colIndex)] = 1
+            mode = "" #众数
+            if(NILCount>sheet.nrows*0.02):
+                count = 0
+                for item in itemDic:
+                    if(itemDic[item]>count):
+                        mode = item
+            for rowIndex in range(sheet.nrows):
+                if(sheet.cell_value(rowIndex,colIndex)=="NIL"):
+                    outputSheet.write(rowIndex,colIndex,mode)
+                    continue
+                outputSheet.write(rowIndex,colIndex,sheet.cell_value(rowIndex,colIndex))
+        
+        book.save("tempdata//%s.xls"%fileName)
 
-    def InputForTrain(self, path="C:\\users\yang\desktop\data", fileName="1", rowBegin=8, cols=[-2]*61):
+    def InputForTrain(self, path="tempdata", fileName="1", rowBegin=8, cols=[-2]*61):
         '''
         参数说明
         # path is where the training data located
@@ -83,7 +129,7 @@ class FileInput():
 
         return featuresDic, labelsDic
 
-    def InputForPredict(self, path="C:\\users\yang\desktop\data", fileName="1", rowBegin=8, cols=[-2]*61):
+    def InputForPredict(self, path="tempdata", fileName="1", rowBegin=8, cols=[-2]*61):
         '''
         参数说明
         # path is where the training data located
@@ -141,7 +187,7 @@ class FileInput():
 
         return featuresDic, labelsDic
 
-    def InputGetDic(self, path="C:\\users\yang\desktop\data", fileName="1", nameRow=6, cols=[-2]*61):
+    def InputGetDic(self, path="tempdata", fileName="1", nameRow=6, cols=[-2]*61):
         try:
             book = xlrd.open_workbook(path+"\\"+fileName+".xls")
         except Exception as e:
@@ -159,45 +205,42 @@ class FileInput():
 
 
 if __name__=="__main__": 
-    try:
-        book = xlrd.open_workbook("c:\\users\yang\desktop\data\\1.xls")
-        sheet = book.sheet_by_index(0)
-    except Exception as e:
-        print(e)
-        
-        
-    labelIndex = 17
-    cellDic = {} 
-    problemCell = {}
-    for index in range(8,sheet.nrows):
-        try:
-            cellDic[sheet.cell_value(index, 2)] += 1
-        except:
-            cellDic[sheet.cell_value(index, 2)] = 1
-        try:
-            if(sheet.cell_value(index,labelIndex)<=99.5):
-                try:
-                    problemCell[sheet.cell_value(index,2)] += 1
-                except:
-                    problemCell[sheet.cell_value(index,2)] = 1
-        except Exception as e:
-            print(sheet.cell_value(index,labelIndex))
-    l = {}
-    for item in cellDic:
-        try:
-            print(problemCell[item], cellDic[item], round(problemCell[item]/cellDic[item],5), item)
-            l[item] = round(problemCell[item]/cellDic[item],5)
-        except:
-            print(0, cellDic[item], round(0/cellDic[item],5), item)
-            l[item] = round(0/cellDic[item],5)
-    print(len(problemCell), len(cellDic))
-    l = sorted(l.items(), key = lambda x:x[1], reverse=True)
-    for item in l:
-        print(item, cellDic[item[0]])
-
-
-
-
+    obj = FileInput()
+    obj.DataPreprocess()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 

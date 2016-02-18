@@ -1,10 +1,10 @@
 # -*- coding=utf-8 -*-
 '''
-Created on 2016/1/9
+Created on 2016/2/18
 
 @author: YANG
 '''
-from Edition3.FileInput import FileInput
+from Beta_1.FileInput import FileInput
 import math
 import pickle
 import os
@@ -88,7 +88,7 @@ class RCA():
         
         return tempF, tempL
     
-    def Train(self, path="C:\\users\yang\desktop\data", fileName="1",ratio=1):
+    def Train(self, path="tempdata", fileName="1",ratio=1):
         cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[27,28,29,30])
         featuresDic, labelsDic = FileInput().InputForTrain(path, fileName,cols=cols)
         for item in featuresDic:
@@ -101,7 +101,8 @@ class RCA():
             pickle.dump(self.tree, writer)
             writer.close()
         
-    def DefineCols(self, label=-1, filteredCols = []):
+    def DefineCols(self, label=0, filteredCols = []):
+        #将filteredCols中提及的列设置为-1，label代表的列设置为1，其余为0
         cols = [0]*61
         cols[label] = 1
         for index in filteredCols:
@@ -299,11 +300,11 @@ class RCA():
  
     def VisualizeTree(self):
         print("nodes of the tree is %i"%len(self.tree))
-        max = -1
+        height = -1
         for i in self.tree:
             if(i>max):
-                max = i 
-        print("the height of the tree is %i"%(int(math.log2(max))+1))
+                height = i 
+        print("the height of the tree is %i"%(int(math.log2(height))+1))
         
         i = 1
         height = 0
@@ -321,7 +322,7 @@ class RCA():
         
         pass
     
-    def Predict(self, path="C:\\users\yang\desktop\data", fileName="1", ratio=1):
+    def Predict(self, path="tempdata", fileName="1", ratio=1):
         cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[27,28,29,30])
         featuresDic, labelsDic = FileInput().InputForPredict(path, fileName,cols=cols)
         
@@ -367,9 +368,6 @@ class RCA():
                     print(item,end = "")
                 print()
 
-            #print(item)
-            #print(leafNodeDic)
-            #self.VisualizeTree()
 
 
 if __name__=="__main__":
@@ -379,4 +377,3 @@ if __name__=="__main__":
     #RCA().Train(ratio=1.5)
     print("Train ends: "+time.strftime("%H:%M:%S",time.localtime()))
     RCA().Predict()
-    #cols = RCA().DefineCols(label=17, filteredCols=[i for i in range(4)]+[27,28,29,30]) 
