@@ -13,6 +13,7 @@ import numpy as np
 import time
 
 ENTROPYLIMIT = 0.1
+IGLIMIT = 0.05
 '''
 DATA INFO 
 0~3：时间戳、小区名等无效信息
@@ -40,28 +41,17 @@ DATA INFO
 
 
 
-class RCA():
-    '''
-    这个Node的定义是之前版本的遗留物，留在这里当做启发
-
-    '''
-    class Node():
-        def __init__(self):
-            self.attrIndexSelected = -1      # -1 represents selecting no feature
-            self.SubNodes = []               # contains left and right son
-            self.SplitPoint = 0              # left son <, right son >=
-            self.Label = 0                   # 0 represents the node is not leaf node
-            self.dataNum = 0                 # the number of data which should be classified by this node
-            self.Position = -1               # the position of root is 1
-
+class RCA_Train():
+     
+    
     def __init__(self):
         '''
-        tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon)] }
-
+        tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon),IG] }
         # Position 是各个节点在决策树中所处的位置， 根节点处于位置 “1”
         # selectedAttr 表示该节点选取的属性，以特征下标表示，而非名称
         # splitPoint 表示以selectedAttr为判别属性时，分界属性值是什么
         # entropy表明在该节点处所有统计数据的熵情况
+        # IG information gain of the node
         '''
         self.tree = {}
     
@@ -89,17 +79,19 @@ class RCA():
         return tempF, tempL
     
     def Train(self, path="tempdata", fileName="1",ratio=1):
-        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[27,28,29,30])
-        featuresDic, labelsDic = FileInput().InputForTrain(path, fileName,cols=cols)
-        for item in featuresDic:
-            if(item!="146680_Ang_Mo_Kio_Ave_1_Blk_331"):
-                continue
-            features, labels = self.AdjustPosNeg(featuresDic[item],labelsDic[item],ratio)
-            self.tree = {}
-            self.BuildTree(features, labels)
-            writer = open(os.getcwd()+'\%s'%item,'wb')
-            pickle.dump(self.tree, writer)
-            writer.close()
+        '''
+        #训练模型&保存
+        #虽然predict做的工作较少，只是读取训练的模型，结合负样本特征，给出最终预测。
+        #但是为了逻辑上的清晰，还是将predict功能单独辟出来
+        '''
+        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)])
+        features, labels = FileInput().InputForTrain(cols=cols)
+        features, labels = self.AdjustPosNeg(features,labels,ratio)
+        self.tree = {}
+        self.BuildTree(features, labels)
+        writer = open(path+"\\"+fileName,'wb')
+        pickle.dump(self.tree, writer)
+        writer.close()
         
     def DefineCols(self, label=0, filteredCols = []):
         #将filteredCols中提及的列设置为-1，label代表的列设置为1，其余为0
@@ -112,32 +104,40 @@ class RCA():
     def BuildTree(self, features, labels):
         filteredFea = [0]*len(features[0])
         filteredSam = [0]*len(labels)
-        # ChooseBestAttr返回的第一个参数是三元tuple，注意！
+        # ChooseBestAttr返回的第一个参数是三元tuple，注意！     
         rootEntropy, rootAttr, rootSplitPoint = self.ChooseBestAttr(features,labels,filteredFea,filteredSam)
-        self.tree[1] = [rootAttr, rootSplitPoint, rootEntropy]
+        
+      
+        NEGCount = 0
+        for item in labels:
+            if(item==-1):
+                NEGCount += 1
+        p = NEGCount/len(labels)
+        initEntropy = -(p*math.log2(p)+(1-p)*math.log2(1-p)) #计算原始样本中的熵，用于计算之后的熵增益
+        IG = initEntropy-rootEntropy[0]  #information gain of the root
+        self.tree[1] = [rootAttr, rootSplitPoint, rootEntropy, IG]
         filteredFea[rootAttr] = 1
         isLeaf = False
-        if(rootEntropy[1]<ENTROPYLIMIT):
+        if(IG<IGLIMIT):
             isLeaf = True
         self.TreeGrowth(features, labels, filteredFea, filteredSam, 1, True, isLeaf)
         
-        if(rootEntropy[2]<ENTROPYLIMIT):
+        if(IG<IGLIMIT):
             isLeaf = True
         self.TreeGrowth(features, labels, filteredFea, filteredSam, 1, False, isLeaf)
  
     def TreeGrowth(self, features, labels, filteredFea, filteredSam, parentPosition, isLeft, isLeaf):
         '''
-        如果是计算父节点时发现此节点不添加任何判断属性，熵就已经达标的话，便将此节点定义为叶节点
+        #如果是计算父节点时发现此节点不添加任何判断属性，熵就已经达标的话，便将此节点定义为叶节点
         '''
         if(isLeaf): 
             if(isLeft):
                 entropy = [self.tree[parentPosition][2][1],-1,-1]
-                self.tree[2*parentPosition] = [-1, -1, entropy]
+                self.tree[2*parentPosition] = [-1, -1, entropy, 0]    # 叶节点未能给分类带来帮助， IG = 0
             else:
                 entropy = [self.tree[parentPosition][2][2],-1,-1]
-                self.tree[2*parentPosition+1] = [-1, -1, entropy]
+                self.tree[2*parentPosition+1] = [-1, -1, entropy, 0]
             return
-
 
 
         parentSelectedAttr = self.tree[parentPosition][0]
@@ -150,11 +150,12 @@ class RCA():
                 if(features[i][parentSelectedAttr]>=parentSplitPoint):
                     leftFilteredSam[i] = 1
 
-            entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,leftFilteredSam)   
-            self.tree[2*parentPosition] = [attr, splitPoint, entropy]
+            entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,leftFilteredSam)  
+            IG = self.tree[parentPosition][2][0] - entropy[0]
+            self.tree[2*parentPosition] = [attr, splitPoint, entropy, IG]
             leftFilteredFea[attr] = 1
-            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, True, entropy[1]<ENTROPYLIMIT)
-            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, False, entropy[2]<ENTROPYLIMIT)
+            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, True, IG<IGLIMIT)
+            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, False, IG<IGLIMIT)
         else:
             rightFilteredSam = filteredSam[:]
             rightFilteredFea = filteredFea[:]
@@ -162,11 +163,12 @@ class RCA():
                 if(features[i][parentSelectedAttr]<parentSplitPoint):
                     rightFilteredSam[i] = 1
 
-            entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,rightFilteredSam)   
-            self.tree[2*parentPosition+1] = [attr, splitPoint, entropy]
+            entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,rightFilteredSam)
+            IG = self.tree[parentPosition][2][0] - entropy[0]   
+            self.tree[2*parentPosition+1] = [attr, splitPoint, entropy, IG]
             rightFilteredFea[attr] = 1
-            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, True, entropy[1]<ENTROPYLIMIT)
-            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, False, entropy[2]<ENTROPYLIMIT)
+            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, True, IG<IGLIMIT)
+            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, False, IG<IGLIMIT)
 
         return
  
@@ -280,100 +282,37 @@ class RCA():
         
         return entropy, SmallerEntropy, LargerEntropy
  
-    def FindPath(self, feature):
-        '''
-        记录每条item在决策树中游走的过程，记录经过的节点，及各个节点的特性
-        '''
-        path = []
-        position = 1
-        node = self.tree[position]
-        path.append([position,node])
-        while(node[0]!=-1):
-            if(feature[node[0]]<node[1]):
-                position *= 2
-            else:
-                position *= 2
-                position += 1
-            node = self.tree[position]
-            path.append([position,node])
-        return path
- 
-    def VisualizeTree(self):
-        print("nodes of the tree is %i"%len(self.tree))
-        height = -1
-        for i in self.tree:
-            if(i>max):
-                height = i 
-        print("the height of the tree is %i"%(int(math.log2(height))+1))
-        
-        i = 1
-        height = 0
-        while(height<10):
-            while(i<2**height):
-                if(self.tree.__contains__(i)):
-                    print(str(self.tree[i][0])+" ", end="")
-                else:
-                    print(" ", end="")
-                i += 1
-            print()
-            height += 1
- 
     def Pruning(self):
         
         pass
     
-    def Predict(self, path="tempdata", fileName="1", ratio=1):
-        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[27,28,29,30])
-        featuresDic, labelsDic = FileInput().InputForPredict(path, fileName,cols=cols)
-        
-        for item in featuresDic:
-            if(item!="146680_Ang_Mo_Kio_Ave_1_Blk_331"):
-                continue
-            reader = open(os.getcwd()+'\%s'%item,'rb')
-            self.tree = pickle.load(reader)
-            reader.close()
-            leafNodeDic = {}
-            features = featuresDic[item]
-            labels = labelsDic[item]
-            pathes = []
-            for index in range(len(labels)):
-                if(labels[index]==-1):
-                    path = self.FindPath(features[index])
-                    pathes.append(path)
-                    continue
-                    for item in path:
-                        print(item[0], end=" ")
-                    print()
-                    try:
-                        leafNodeDic[path[-1][0]] += 1
-                    except:
-                        leafNodeDic[path[-1][0]] = 1
-            treeStrut = []
-            for path in pathes:
-                for item in path:
-                    try:
-                        treeStrut[int(math.log2(item[0]))][item[0]] += 1
-                    except:
-                        try:
-                            treeStrut[int(math.log2(item[0]))][item[0]] = 1
-                        except:
-                            treeStrut.append({})
-                            treeStrut[int(math.log2(item[0]))][item[0]] = 1
-                        
-            for index in range(len(treeStrut)):
-                dic = treeStrut[index]
-                l = sorted(dic.items(), key=lambda x:x[0])
-                print("                           ",end="")
-                for item in l:
-                    print(item,end = "")
-                print()
-
+    
 
 
 if __name__=="__main__":
     
     print("Train starts: "+time.strftime("%H:%M:%S",time.localtime()))
     print(".....")
-    #RCA().Train(ratio=1.5)
+    RCA_Train().Train(ratio=1.5)
     print("Train ends: "+time.strftime("%H:%M:%S",time.localtime()))
-    RCA().Predict()
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

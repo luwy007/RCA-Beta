@@ -1,3 +1,5 @@
 eclipse.preferences.version=1
 encoding//Beta_1/FileInput.py=utf-8
-encoding//Beta_1/RCA.py=utf-8
+encoding//Beta_1/Info.py=utf-8
+encoding//Beta_1/RCA_Predict.py=utf-8
+encoding//Beta_1/RCA_Train.py=utf-8
