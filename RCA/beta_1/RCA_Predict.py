@@ -25,12 +25,11 @@ class RCA_Predict:
     
     def Predict(self, path="tempdata", fileName="1"):
     
-        cols = RCA_Train().DefineCols(label=17, filteredCols=[i for i in range(4)])
+        cols = RCA_Train().DefineCols(label=17, filteredCols=[i for i in range(4)]+[9,25,26,27])
         features, labels = FileInput().InputForPredict(cols=cols)
         reader = open(path+"\\"+fileName,'rb')
         self.tree = pickle.load(reader)
         reader.close()
-        
         
         IG = {}    # IG = { fea : { pos : count }}
         for feature in features:
@@ -39,6 +38,9 @@ class RCA_Predict:
             for index in range(len(path)):
                 node = path[index][1]
                 fea = node[0]
+                if(fea==-1):    # fea如果是-1，表示没有选择任何feature作为划分辅助，即该节点为叶节点
+                    continue
+                
                 pos = path[index][0]
                 if(not IG.__contains__(fea)):
                     IG[fea] = {pos:0}
@@ -48,24 +50,50 @@ class RCA_Predict:
                     IG[fea][pos] = 1
                 
         IGRank = {}
+        NEG = 0
         for fea in IG:
             count = 0
             for pos in IG[fea]:
                 count += IG[fea][pos]
             tempIG = 0
             for pos in IG[fea]:
+                if(self.tree[pos][3]<0):
+                    print("IG is negative, %d, %f,"%(pos,self.tree[pos][3]))
+                    NEG += 1
                 tempIG += self.tree[pos][3]*IG[fea][pos]/count
             IGRank[fea] = tempIG
         
+        print(len(self.tree), NEG)
+        
+        
         result = sorted(IGRank.items(), key = lambda x:x[1], reverse=True)
         
-        feaDic = FileInput().InputGetDic()
-        rootCause = []
+        
+        #=======================================================================
+        # 这里读取feaDic的逻辑有问题
+        #=======================================================================
+        
+        feaDic = FileInput().InputGetDic(cols=cols)
+        rootCause = [] 
         for item in result:
-            rootCause.append([feaDic[item[0]],item[1]])
-        print(rootCause)
+            try:
+                rootCause.append([feaDic[item[0]], item[1]]) 
+            except:
+                print(item[0])
+        print(len(rootCause), rootCause)
+        
+        IGTotal = 0
+        for item in rootCause[:5]:
+            IGTotal += item[1]
+        print(IGTotal/5.116030937798969)
         
         return 
+        
+
+
+
+
+
         '''
         # 接下来的部分，主要用于展示已经生成的决策树模型。 在beta版本中并不需要
         '''
@@ -143,8 +171,6 @@ class RCA_Predict:
         return path
     
 if __name__=="__main__":
-    ig = {1:2,2:3}
-    result = sorted(ig.items(), key = lambda x:x[1])
     RCA_Predict().Predict()  
     
     

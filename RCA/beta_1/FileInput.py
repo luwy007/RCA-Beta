@@ -78,8 +78,6 @@ class FileInput():
                         
         book.save("tempdata//%s.xls"%fileName)
         
-        
-    
     def InputForTrain(self, path="tempdata", fileName="1", rowBegin=8, cols=[-2]*61):
         '''
         #参数说明
@@ -185,7 +183,7 @@ class FileInput():
         for i in range(sheet.ncols):
             if(cols[i]!=0):
                 continue
-            dic[colIndex] = sheet.cell_value(nameRow,i)
+            dic[colIndex] = sheet.cell_value(nameRow,i)+"_"+sheet.cell_value(nameRow+1,i)
             colIndex += 1
         return dic
 

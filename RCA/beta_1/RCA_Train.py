@@ -84,7 +84,7 @@ class RCA_Train():
         #虽然predict做的工作较少，只是读取训练的模型，结合负样本特征，给出最终预测。
         #但是为了逻辑上的清晰，还是将predict功能单独辟出来
         '''
-        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)])
+        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[9,25,26,27])
         features, labels = FileInput().InputForTrain(cols=cols)
         features, labels = self.AdjustPosNeg(features,labels,ratio)
         self.tree = {}
@@ -151,7 +151,7 @@ class RCA_Train():
                     leftFilteredSam[i] = 1
 
             entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,leftFilteredSam)  
-            IG = self.tree[parentPosition][2][0] - entropy[0]
+            IG = self.tree[parentPosition][2][1] - entropy[0]
             self.tree[2*parentPosition] = [attr, splitPoint, entropy, IG]
             leftFilteredFea[attr] = 1
             self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, True, IG<IGLIMIT)
@@ -164,7 +164,7 @@ class RCA_Train():
                     rightFilteredSam[i] = 1
 
             entropy, attr, splitPoint = self.ChooseBestAttr(features,labels,filteredFea,rightFilteredSam)
-            IG = self.tree[parentPosition][2][0] - entropy[0]   
+            IG = self.tree[parentPosition][2][2] - entropy[0]   
             self.tree[2*parentPosition+1] = [attr, splitPoint, entropy, IG]
             rightFilteredFea[attr] = 1
             self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, True, IG<IGLIMIT)
@@ -287,8 +287,6 @@ class RCA_Train():
         pass
     
     
-
-
 if __name__=="__main__":
     
     print("Train starts: "+time.strftime("%H:%M:%S",time.localtime()))
