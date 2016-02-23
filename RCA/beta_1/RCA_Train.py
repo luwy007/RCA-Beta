@@ -13,7 +13,7 @@ import numpy as np
 import time
 
 ENTROPYLIMIT = 0.1
-IGLIMIT = 0.05
+
 '''
 DATA INFO 
 0~3：时间戳、小区名等无效信息
@@ -44,7 +44,7 @@ DATA INFO
 class RCA_Train():
      
     
-    def __init__(self):
+    def __init__(self, path="", fileName="", label=1, IGLIMIT=0, ratio=1):
         '''
         tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon),IG] }
         # Position 是各个节点在决策树中所处的位置， 根节点处于位置 “1”
@@ -53,6 +53,11 @@ class RCA_Train():
         # entropy表明在该节点处所有统计数据的熵情况
         # IG information gain of the node
         '''
+        self.label = label
+        self.path = path
+        self.fileName = fileName
+        self.IGLIMIT = IGLIMIT
+        self.ratio = ratio
         self.tree = {}
     
     def AdjustPosNeg(self, features, labels, ratio):
@@ -78,27 +83,31 @@ class RCA_Train():
         
         return tempF, tempL
     
-    def Train(self, path="tempdata", fileName="1",ratio=1):
+    def Train(self, filteredFea=[]):
         '''
-        #训练模型&保存
-        #虽然predict做的工作较少，只是读取训练的模型，结合负样本特征，给出最终预测。
-        #但是为了逻辑上的清晰，还是将predict功能单独辟出来
+        # 训练模型&保存
+        # 虽然predict做的工作较少，只是读取训练的模型，结合负样本特征，给出最终预测。
+        # 但是为了逻辑上的清晰，还是将predict功能单独辟出来
+        # 为了自适应调整模型得出的结果，添加人为定义的filteredFea，即网络调优工程师分析排除的特征将不出现在下一次模型训练中
+        # 增强了模型的适应能力，更符合实际使用时的需求
         '''
-        cols = self.DefineCols(label=17, filteredCols=[i for i in range(4)]+[9,25,26,27])
+        cols = self.DefineCols(label=self.label, filteredCols=[i for i in range(4)]+filteredFea)
         features, labels = FileInput().InputForTrain(cols=cols)
-        features, labels = self.AdjustPosNeg(features,labels,ratio)
+        features, labels = self.AdjustPosNeg(features,labels,self.ratio)
         self.tree = {}
         self.BuildTree(features, labels)
-        writer = open(path+"\\"+fileName,'wb')
+        writer = open(self.path+"\\"+self.fileName,'wb')
         pickle.dump(self.tree, writer)
         writer.close()
         
     def DefineCols(self, label=0, filteredCols = []):
         #将filteredCols中提及的列设置为-1，label代表的列设置为1，其余为0
+        
+        KPIs = [9,17,25,26,27]   # 过滤掉所有重点监测的其他KPI，这些是可以事先排除的因素
         cols = [0]*61
-        cols[label] = 1
-        for index in filteredCols:
+        for index in filteredCols+KPIs:
             cols[index] = -1
+        cols[label] = 1
         return cols
 
     def BuildTree(self, features, labels):
@@ -118,11 +127,11 @@ class RCA_Train():
         self.tree[1] = [rootAttr, rootSplitPoint, rootEntropy, IG]
         filteredFea[rootAttr] = 1
         isLeaf = False
-        if(IG<IGLIMIT):
+        if(IG<self.IGLIMIT):
             isLeaf = True
         self.TreeGrowth(features, labels, filteredFea, filteredSam, 1, True, isLeaf)
         
-        if(IG<IGLIMIT):
+        if(IG<self.IGLIMIT):
             isLeaf = True
         self.TreeGrowth(features, labels, filteredFea, filteredSam, 1, False, isLeaf)
  
@@ -154,8 +163,8 @@ class RCA_Train():
             IG = self.tree[parentPosition][2][1] - entropy[0]
             self.tree[2*parentPosition] = [attr, splitPoint, entropy, IG]
             leftFilteredFea[attr] = 1
-            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, True, IG<IGLIMIT)
-            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, False, IG<IGLIMIT)
+            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, True, IG<self.IGLIMIT)
+            self.TreeGrowth(features, labels, leftFilteredFea, leftFilteredSam, 2*parentPosition, False, IG<self.IGLIMIT)
         else:
             rightFilteredSam = filteredSam[:]
             rightFilteredFea = filteredFea[:]
@@ -167,8 +176,8 @@ class RCA_Train():
             IG = self.tree[parentPosition][2][2] - entropy[0]   
             self.tree[2*parentPosition+1] = [attr, splitPoint, entropy, IG]
             rightFilteredFea[attr] = 1
-            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, True, IG<IGLIMIT)
-            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, False, IG<IGLIMIT)
+            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, True, IG<self.IGLIMIT)
+            self.TreeGrowth(features, labels, rightFilteredFea, rightFilteredSam, 2*parentPosition+1, False, IG<self.IGLIMIT)
 
         return
  
@@ -291,7 +300,7 @@ if __name__=="__main__":
     
     print("Train starts: "+time.strftime("%H:%M:%S",time.localtime()))
     print(".....")
-    RCA_Train().Train(ratio=1.5)
+    RCA_Train().Train()
     print("Train ends: "+time.strftime("%H:%M:%S",time.localtime()))
      
 

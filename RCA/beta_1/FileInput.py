@@ -120,11 +120,24 @@ class FileInput():
         #定义当指标为非完美时，便为负类，以此解决数据倾斜问题，并且可以尽可能捕捉到更多的根因识别有效信息
         '''
         labels = []
-        for item in sheet.col_values(labelIndex)[rowBegin:]:
-            if(item==100):
-                labels.append(1)
-            else:
-                labels.append(-1)
+        if(labelIndex==9):
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item>=2):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
+        elif(labelIndex==26):
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item==0):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
+        else:
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item==100):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
         
         return features, labels
     
@@ -152,11 +165,24 @@ class FileInput():
                 break
 
         labels = []
-        for item in sheet.col_values(labelIndex)[rowBegin:]:
-            if(item<99.5):
-                labels.append(-1)
-            else:
-                labels.append(1)
+        if(labelIndex==9):
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item>1):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
+        elif(labelIndex==26):
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item<0.5):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
+        else:
+            for item in sheet.col_values(labelIndex)[rowBegin:]:
+                if(item>99.5):
+                    labels.append(1)
+                else:
+                    labels.append(-1)
 
         features = []
         for rowIndex in range(rowBegin, sheet.nrows):
@@ -189,12 +215,7 @@ class FileInput():
 
 
 if __name__=="__main__": 
-    obj = FileInput()
-    book = xlrd.open_workbook("tempdata//1.xls")
-    sheet = book.sheet_by_index(0)
-    
-    print(sheet.cell_value(8,28))
-    print(int(sheet.cell_value(8,28)))
+    pass
     
     #obj.DataPreprocess()
     

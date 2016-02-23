@@ -12,22 +12,28 @@ from Beta_1.RCA_Train import RCA_Train
 
 class RCA_Predict:
     
-    def __init__(self):
+    def __init__(self, path="", fileName="", label=1):
         '''
         tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon),IG] }
         # Position 是各个节点在决策树中所处的位置， 根节点处于位置 “1”
         # selectedAttr 表示该节点选取的属性，以特征下标表示，而非名称
         # splitPoint 表示以selectedAttr为判别属性时，分界属性值是什么
         # entropy表明在该节点处所有统计数据的熵情况
-        # IG information gain of the node
+        # IG information gain of the node 
         '''
+        self.label = label
+        self.path = path
+        self.fileName = fileName
         self.tree = {}
     
-    def Predict(self, path="tempdata", fileName="1"):
-    
-        cols = RCA_Train().DefineCols(label=17, filteredCols=[i for i in range(4)]+[9,25,26,27])
+    def Predict(self, filteredFea=[]):
+        #=======================================================================
+        # 为了自适应调整模型得出的结果，添加人为定义的filteredFea，即网络调优工程师分析排除的特征将不出现在下一次模型训练中
+        # 增强了模型的适应能力，更符合实际使用时的需求
+        #=======================================================================
+        cols = RCA_Train().DefineCols(label=self.label, filteredCols=[i for i in range(4)]+filteredFea)
         features, labels = FileInput().InputForPredict(cols=cols)
-        reader = open(path+"\\"+fileName,'rb')
+        reader = open(self.path+"\\"+self.fileName,'rb')
         self.tree = pickle.load(reader)
         reader.close()
         
@@ -63,15 +69,10 @@ class RCA_Predict:
                 tempIG += self.tree[pos][3]*IG[fea][pos]/count
             IGRank[fea] = tempIG
         
-        print(len(self.tree), NEG)
+        print("size of the tree is %d"%len(self.tree))
         
         
         result = sorted(IGRank.items(), key = lambda x:x[1], reverse=True)
-        
-        
-        #=======================================================================
-        # 这里读取feaDic的逻辑有问题
-        #=======================================================================
         
         feaDic = FileInput().InputGetDic(cols=cols)
         rootCause = [] 
@@ -80,18 +81,25 @@ class RCA_Predict:
                 rootCause.append([feaDic[item[0]], item[1]]) 
             except:
                 print(item[0])
-        print(len(rootCause), rootCause)
+        print("%d skeptical root causes"%len(rootCause))
+        
+        for item in rootCause[:]:
+            print(item)
+        
+        
         
         IGTotal = 0
-        for item in rootCause[:5]:
+        for item in rootCause[:]:
             IGTotal += item[1]
-        print(IGTotal/5.116030937798969)
         
-        return 
+        for i in range(1,5):
+            temp = 0
+            for item in rootCause[:5*i]:
+                temp += item[1]
+            #print(temp/IGTotal)
         
-
-
-
+        return rootCause
+        
 
 
         '''
@@ -171,7 +179,7 @@ class RCA_Predict:
         return path
     
 if __name__=="__main__":
-    RCA_Predict().Predict()  
+    pass 
     
     
     
