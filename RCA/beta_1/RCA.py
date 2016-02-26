@@ -4,6 +4,7 @@ Created on 2016年2月22日
 
 @author: YANG
 '''
+from fileinput import filename
 '''
 DATA INFO 
 0~3：时间戳、小区名等无效信息
@@ -22,8 +23,8 @@ from Beta_1.RCA_Predict import RCA_Predict
 from Beta_1.RCA_Train import RCA_Train
 import time
 
-
-def RCA(IGLIMIT=0.1, ratio=3):
+def RCA(IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filteredFea=[]):
+    
     
     #===========================================================================
     # 参数获取，包括 path, fileName, ratio, IGLIMIT, label
@@ -38,34 +39,9 @@ def RCA(IGLIMIT=0.1, ratio=3):
     #  ERAB Call Drop Rate:4, 
     #  Intra-Frequency Handover Success Rate:5}
     #=========================================================================== 
-    path = "tempdata"
-    fileName = "1"
-    labelIndex = 2
+    
     labelDic = [9,17,25,26,27]
-    filteredFea = []
-    #print("whether use the default settings(y/n):")
-    #===========================================================================
-    # 这边的参数输入逻辑也需要修改，修改成从文件中读取参数列表     2/23
-    #===========================================================================
-    if(False and input()=='y'):
-        print("please input the path of the data:")
-        path = input()
-        print("please input the file name of the data:")
-        fileName = input()
-        print("labelIndex:")
-        labelIndex = input()
-        print("IGLIMIT:")
-        IGLIMIT = input()
-        print("ratio:")
-        ratio = input()
-        print("filteredFea:")
-        while(True):
-            try:
-                receiver = int(input())
-                filteredFea.append(receiver)
-            except:
-                break
-        
+    
     trainer = RCA_Train(path, fileName, labelDic[labelIndex-1], IGLIMIT, ratio)
     predictor = RCA_Predict(path, fileName, labelDic[labelIndex-1])
 
@@ -91,22 +67,47 @@ def intersection(prediction1, prediction2):
     
     return result
 
+def getParameters():
+    #===========================================================================
+    # IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filteredFea
+    #===========================================================================
+    reader = open("parameters.txt","r")
+
+    IGLIMIT = float(reader.readline())
+    ratio = float(reader.readline())
+    path = reader.readline().strip()
+    fileName = reader.readline().strip()
+    labelIndex = int(reader.readline())
+    filteredFea = []
+    items = reader.readline().strip()[1:-1].split(",")
+    for item in items:
+        try:
+            filteredFea.append(int(item))
+        except:
+            break
+    return IGLIMIT, ratio, path, fileName, labelIndex, filteredFea
 def main():
     #===========================================================================
     # 此处的处理逻辑存在较大的安全隐患，即对训练结果出现极端情况时丧失处理能力
     # 极端情况指： 当训练参数调至ratio很大，IGLIMIT很小，决策树既无法长大，root cause亦应该很稳定时，
     # 依旧不能满足 5组数据有3个共同的情况！
     #===========================================================================
-    IGLIMIT = 0.07
-    ratio = 2
+    paras = getParameters()
+    
+    IGLIMIT = paras[0]
+    ratio = paras[1]
+    path = paras[2]
+    fileName = paras[3]
+    labelIndex = paras[4]
+    filteredFea = paras[5]
     Found = False
     prediction1 = {}
     while(not Found):
         
         print("\n\n\n\n")
         showTime()
-        print("IGLIMIT:%f, ratio:%d"%(IGLIMIT,ratio))
-        rootCause = RCA(IGLIMIT,ratio)
+        print("IGLIMIT:%f, ratio:%f"%(IGLIMIT,ratio))
+        rootCause = RCA(IGLIMIT, ratio, path, labelIndex, fileName, filteredFea)
         prediction1 = {}
         for item in rootCause[:10]:
             prediction1[item[0]] = item[1]
