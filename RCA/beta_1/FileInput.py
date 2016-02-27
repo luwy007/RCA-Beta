@@ -16,6 +16,7 @@ import xlrd
 import xlwt
 import numpy as np
 import os
+
 class FileInput():
     '''
     # 给Train和Predict提供良好的数据读取接口
@@ -25,21 +26,21 @@ class FileInput():
     def __init__(self):
         pass
 
-    def DataPreprocess(self, fileName = "1"):
+    def DataPreprocess(self, path="", fileName = "1"):
         '''
         #对数据进行下述预处理：（去噪，数据转存）
         1）记录包含NIL的列信息，如果NIL个数不超过总样本数的2%，则利用众数代替。否则以全零代替（消除该特征对接下来的模型训练预测产生影响）
-        2）将预处理的数据重新写到"tempdata//%s.xls"%fileName文件中
+        2）将预处理的数据重新写到"tempdata\\%s.xls"%fileName文件中
         
         #注意：
         #在dataPreprocess之后，tempdata中的数据应该不存在噪声（即NIL），但是应该存在着众多的“最终无关项”。在beta1版本中需要对此多加注意
         
         '''
         try:
-            book = xlrd.open_workbook(fileName+".xls")
+            book = xlrd.open_workbook(path+"\\"+fileName+".xls")
         except Exception as e:
             print(e)
-            return 
+            return False
         sheet = book.sheet_by_index(0)
         
         os.makedirs("tempdata",exist_ok=True)
@@ -71,14 +72,16 @@ class FileInput():
                         continue
                     outputSheet.write(rowIndex,colIndex,sheet.cell_value(rowIndex,colIndex))
             else:
-                for rowIndex in range(8):
+                for rowIndex in range(1):
                     outputSheet.write(rowIndex,colIndex,sheet.cell_value(rowIndex,colIndex))
-                for rowIndex in range(8,sheet.nrows):
+                for rowIndex in range(1,sheet.nrows):
                     outputSheet.write(rowIndex,colIndex,mode)
                         
-        book.save("tempdata//%s.xls"%fileName)
+        book.save("tempdata\\%s.xls"%fileName)
+        return True
+
         
-    def InputForTrain(self, path="tempdata", fileName="1", rowBegin=8, cols=[-2]*61):
+    def InputForTrain(self, fileName="1", cols=[-2]*61):
         '''
         #参数说明
         # path is where the training data located
@@ -89,8 +92,9 @@ class FileInput():
         #注意
         #在区分正负样例时，有诸多问题。譬如划分的标准（严格则会有数据倾斜问题，放宽限制有可能引入噪声）
         '''
+        rowBegin=1
         try:
-            book = xlrd.open_workbook(path+"//"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
         except Exception as e:
             print(e)
             return 
@@ -141,7 +145,7 @@ class FileInput():
         
         return features, labels
     
-    def InputForPredict(self, path="tempdata", fileName="1", rowBegin=8, cols=[-2]*61):
+    def InputForPredict(self, fileName="1", cols=[-2]*61):
         '''
         # path is where the training data located
         # fileName is the name of training data
@@ -151,8 +155,10 @@ class FileInput():
         # 此处隐藏的问题和InputForTrain中一致，即究竟如何划分数据的正负类。
         # 划分的松散有可能引入噪声。暂定为按照工业界阈值来进行划分
         '''
+        
+        rowBegin = 1
         try:
-            book = xlrd.open_workbook(path+"//"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
         except Exception as e:
             print(e)
             return 
@@ -197,9 +203,9 @@ class FileInput():
         features = np.array(features)
         return features, labels
 
-    def InputGetDic(self, path="tempdata", fileName="1", nameRow=6, cols=[-2]*61):
+    def InputGetDic(self, fileName="1", cols=[-2]*61):
         try:
-            book = xlrd.open_workbook(path+"//"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
         except Exception as e:
             print(e)
             return 
@@ -209,16 +215,24 @@ class FileInput():
         for i in range(sheet.ncols):
             if(cols[i]!=0):
                 continue
-            dic[colIndex] = sheet.cell_value(nameRow,i)+"_"+sheet.cell_value(nameRow+1,i)
+            dic[colIndex] = sheet.cell_value(0,i)
+            colIndex += 1
+        return dic
+    
+    def InputGetDicForDel(self, fileName="1"):
+        try:
+            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
+        except Exception as e:
+            print(e)
+            return 
+        sheet = book.sheet_by_index(0)
+        dic = {}
+        colIndex = 0
+        for i in range(sheet.ncols):
+            dic[sheet.cell_value(0,i)] = colIndex
             colIndex += 1
         return dic
 
-
-if __name__=="__main__": 
-    pass
-    
-    #obj.DataPreprocess()
-    
     
     
     

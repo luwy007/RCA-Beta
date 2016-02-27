@@ -12,7 +12,7 @@ from Beta_1.RCA_Train import RCA_Train
 
 class RCA_Predict:
     
-    def __init__(self, path="", fileName="", label=1):
+    def __init__(self, fileName="", label=1):
         '''
         tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon),IG] }
         # Position 是各个节点在决策树中所处的位置， 根节点处于位置 “1”
@@ -22,7 +22,6 @@ class RCA_Predict:
         # IG information gain of the node 
         '''
         self.label = label
-        self.path = path
         self.fileName = fileName
         self.tree = {}
     
@@ -32,8 +31,8 @@ class RCA_Predict:
         # 增强了模型的适应能力，更符合实际使用时的需求
         #=======================================================================
         cols = RCA_Train().DefineCols(label=self.label, filteredCols=[i for i in range(4)]+filteredFea)
-        features, labels = FileInput().InputForPredict(cols=cols)
-        reader = open(self.path+"\\"+self.fileName,'rb')
+        features, labels = FileInput().InputForPredict(self.fileName,cols)
+        reader = open("models\\"+self.fileName,'rb')
         self.tree = pickle.load(reader)
         reader.close()
         
@@ -74,7 +73,7 @@ class RCA_Predict:
         
         result = sorted(IGRank.items(), key = lambda x:x[1], reverse=True)
         
-        feaDic = FileInput().InputGetDic(cols=cols)
+        feaDic = FileInput().InputGetDic(self.fileName, cols)
         rootCause = [] 
         for item in result:
             try:
@@ -100,45 +99,6 @@ class RCA_Predict:
         
         return rootCause
         
-
-
-        '''
-        # 接下来的部分，主要用于展示已经生成的决策树模型。 在beta版本中并不需要
-        '''
-        
-        leafNodeDic = {} 
-        pathes = []
-        for index in range(len(labels)):
-            if(labels[index]==-1):
-                path = self.FindPath(features[index])
-                pathes.append(path)
-                continue
-                for item in path:
-                    print(item[0], end=" ")
-                print()
-                try:
-                    leafNodeDic[path[-1][0]] += 1
-                except:
-                    leafNodeDic[path[-1][0]] = 1
-        treeStrut = []
-        for path in pathes:
-            for item in path:
-                try:
-                    treeStrut[int(math.log2(item[0]))][item[0]] += 1
-                except:
-                    try:
-                        treeStrut[int(math.log2(item[0]))][item[0]] = 1
-                    except:
-                        treeStrut.append({})
-                        treeStrut[int(math.log2(item[0]))][item[0]] = 1
-                    
-        for index in range(len(treeStrut)):
-            dic = treeStrut[index]
-            l = sorted(dic.items(), key=lambda x:x[0])
-            print("                           ",end="")
-            for item in l:
-                print(item,end = "")
-            print()
     
     def VisualizeTree(self):
         print("nodes of the tree is %i"%len(self.tree))
@@ -178,9 +138,7 @@ class RCA_Predict:
             path.append([position,node])
         return path
     
-if __name__=="__main__":
-    pass 
-    
+
     
     
     

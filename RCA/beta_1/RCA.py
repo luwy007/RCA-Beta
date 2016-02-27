@@ -4,7 +4,7 @@ Created on 2016年2月22日
 
 @author: YANG
 '''
-from fileinput import filename
+
 '''
 DATA INFO 
 0~3：时间戳、小区名等无效信息
@@ -21,9 +21,11 @@ DATA INFO
 
 from Beta_1.RCA_Predict import RCA_Predict
 from Beta_1.RCA_Train import RCA_Train
+from Beta_1.FileInput import FileInput
 import time
-
-def RCA(IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filteredFea=[]):
+import xlrd
+import pickle
+def RCA(IGLIMIT=0.1, ratio=3, labelIndex=1, fileName="1", filteredFea=[]):
     
     
     #===========================================================================
@@ -42,11 +44,9 @@ def RCA(IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filte
     
     labelDic = [9,17,25,26,27]
     
-    trainer = RCA_Train(path, fileName, labelDic[labelIndex-1], IGLIMIT, ratio)
-    predictor = RCA_Predict(path, fileName, labelDic[labelIndex-1])
+    trainer = RCA_Train(fileName, labelDic[labelIndex-1], IGLIMIT, ratio)
+    predictor = RCA_Predict(fileName, labelDic[labelIndex-1])
 
-    #showTime()
-    #print("training is running\n......")
     trainer.Train(filteredFea)  
     return predictor.Predict(filteredFea)
     
@@ -71,21 +71,55 @@ def getParameters():
     #===========================================================================
     # IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filteredFea
     #===========================================================================
-    reader = open("parameters.txt","r")
-
-    IGLIMIT = float(reader.readline())
-    ratio = float(reader.readline())
-    path = reader.readline().strip()
-    fileName = reader.readline().strip()
-    labelIndex = int(reader.readline())
+    
+    
+    
+    reader = open("settings\\parameters.txt","r")
+    IGLIMIT = float(reader.readline()[len("IGLIMIT : "):])
+    ratio = float(reader.readline()[len("ratio : "):])
+    path = reader.readline()[len("path : "):].strip()
+    fileName = reader.readline()[len("fileName : "):].strip()
+    labelIndex = int(reader.readline()[len("KPI : "):])
     filteredFea = []
-    items = reader.readline().strip()[1:-1].split(",")
+    items = reader.readline()[len("filteredFea : "):].strip()[1:-1].split(",")
     for item in items:
         try:
             filteredFea.append(int(item))
         except:
             break
     return IGLIMIT, ratio, path, fileName, labelIndex, filteredFea
+
+def IsFormatSame(path="", fileName=""):
+    '''
+    dic = []
+    book = xlrd.open_workbook("tempdata\\data.xls") 
+    sheet = book.sheet_by_index(0)
+    for i in range(sheet.ncols):
+        dic.append(sheet.cell_value(0,i))
+
+    
+    
+    
+    writer = open("settings\\names",'wb')
+    pickle.dump(dic,writer)
+    writer.close()
+    '''
+    
+    reader = open("settings\\names",'rb')
+    dic = pickle.load(reader)
+    
+    book = xlrd.open_workbook("%s\\%s.xls"%(path, fileName))
+    sheet = book.sheet_by_index(0)
+    
+    for colIndex in range(sheet.ncols):
+        if(sheet.cell_value(0,colIndex)!=dic[colIndex]):
+            print("the format is wrong")
+            return False
+    return True
+    
+
+
+
 def main():
     #===========================================================================
     # 此处的处理逻辑存在较大的安全隐患，即对训练结果出现极端情况时丧失处理能力
@@ -102,17 +136,25 @@ def main():
     filteredFea = paras[5]
     Found = False
     prediction1 = {}
+    
+    if(not IsFormatSame(path, fileName)):
+        return
+    
+    if(not FileInput().DataPreprocess(path, fileName)):
+        return
+    
+    print("IGLIMIT:%f\nratio:%f\npath:%s\nfileName:%s\nlabelIndex:%d"%(IGLIMIT,ratio,path,fileName,labelIndex))
+    print("filteredFea:",filteredFea)
     while(not Found):
-        
         print("\n\n\n\n")
         showTime()
         print("IGLIMIT:%f, ratio:%f"%(IGLIMIT,ratio))
-        rootCause = RCA(IGLIMIT, ratio, path, labelIndex, fileName, filteredFea)
+        rootCause = RCA(IGLIMIT, ratio, labelIndex, fileName, filteredFea)
         prediction1 = {}
-        for item in rootCause[:10]:
+        for item in rootCause[:]:
             prediction1[item[0]] = item[1]
-        for i in range(4):
-            rootCause = RCA(IGLIMIT,ratio)
+        for i in range(2):
+            rootCause = RCA(IGLIMIT,ratio, labelIndex, fileName, filteredFea)
             prediction2 = {}
             for item in rootCause[:]:
                 prediction2[item[0]] = item[1]
@@ -123,22 +165,22 @@ def main():
                     print("the model cannot work")
                     return
                 break
-            if(i==3):
+            if(i==1):
                 Found = True
     showTime()
+    labelDic = FileInput().InputGetDicForDel(fileName)
     result = sorted(prediction1.items(), key = lambda x:x[1], reverse=True)
     print("the final result for root cause recommendation")
     for item in result:
-        print(item)
+        print(item, labelDic[item[0]])
     
     return 
 
+
+
 if __name__=="__main__":
-    
+    #IsFormatSame("C:\\Users\\YANG\\Desktop\\Data", "1")
     main()
-    
-    
-    
     
 
 

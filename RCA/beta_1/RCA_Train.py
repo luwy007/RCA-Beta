@@ -44,7 +44,7 @@ DATA INFO
 class RCA_Train():
      
     
-    def __init__(self, path="", fileName="", label=1, IGLIMIT=0, ratio=1):
+    def __init__(self, fileName="", label=1, IGLIMIT=0, ratio=1):
         '''
         tree = { Position : [selectedAttr, splitPoint, entropy (itself, leftSon, rightSon),IG] }
         # Position 是各个节点在决策树中所处的位置， 根节点处于位置 “1”
@@ -54,7 +54,6 @@ class RCA_Train():
         # IG information gain of the node
         '''
         self.label = label
-        self.path = path
         self.fileName = fileName
         self.IGLIMIT = IGLIMIT
         self.ratio = ratio
@@ -92,11 +91,12 @@ class RCA_Train():
         # 增强了模型的适应能力，更符合实际使用时的需求
         '''
         cols = self.DefineCols(label=self.label, filteredCols=[i for i in range(4)]+filteredFea)
-        features, labels = FileInput().InputForTrain(cols=cols)
+        features, labels = FileInput().InputForTrain(self.fileName, cols)
         features, labels = self.AdjustPosNeg(features,labels,self.ratio)
         self.tree = {}
         self.BuildTree(features, labels)
-        writer = open(self.path+"\\"+self.fileName,'wb')
+        os.makedirs("models", exist_ok=True)
+        writer = open("models\\"+self.fileName,'wb')
         pickle.dump(self.tree, writer)
         writer.close()
         
@@ -295,13 +295,7 @@ class RCA_Train():
         
         pass
     
-    
-if __name__=="__main__":
-    
-    print("Train starts: "+time.strftime("%H:%M:%S",time.localtime()))
-    print(".....")
-    RCA_Train().Train()
-    print("Train ends: "+time.strftime("%H:%M:%S",time.localtime()))
+     
      
 
 
