@@ -96,7 +96,7 @@ class RCA_Train():
         self.tree = {}
         self.BuildTree(features, labels)
         os.makedirs("models", exist_ok=True)
-        writer = open("models\\"+self.fileName,'wb')
+        writer = open("models\\%s_model"%self.fileName,'wb')
         pickle.dump(self.tree, writer)
         writer.close()
         

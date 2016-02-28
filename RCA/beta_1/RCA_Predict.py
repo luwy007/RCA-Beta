@@ -32,7 +32,7 @@ class RCA_Predict:
         #=======================================================================
         cols = RCA_Train().DefineCols(label=self.label, filteredCols=[i for i in range(4)]+filteredFea)
         features, labels = FileInput().InputForPredict(self.fileName,cols)
-        reader = open("models\\"+self.fileName,'rb')
+        reader = open("models\\%s_model"%self.fileName,'rb')
         self.tree = pickle.load(reader)
         reader.close()
         

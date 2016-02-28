@@ -37,7 +37,7 @@ class FileInput():
         
         '''
         try:
-            book = xlrd.open_workbook(path+"\\"+fileName+".xls")
+            book = xlrd.open_workbook("%s\\%s.xls"%(path, fileName))
         except Exception as e:
             print(e)
             return False
@@ -77,7 +77,7 @@ class FileInput():
                 for rowIndex in range(1,sheet.nrows):
                     outputSheet.write(rowIndex,colIndex,mode)
                         
-        book.save("tempdata\\%s.xls"%fileName)
+        book.save("tempdata\\preprocessed %s.xls"%fileName)
         return True
 
         
@@ -94,7 +94,7 @@ class FileInput():
         '''
         rowBegin=1
         try:
-            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\preprocessed %s.xls"%fileName)
         except Exception as e:
             print(e)
             return 
@@ -158,7 +158,7 @@ class FileInput():
         
         rowBegin = 1
         try:
-            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\preprocessed %s.xls"%fileName)
         except Exception as e:
             print(e)
             return 
@@ -205,7 +205,7 @@ class FileInput():
 
     def InputGetDic(self, fileName="1", cols=[-2]*61):
         try:
-            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\preprocessed %s.xls"%fileName)
         except Exception as e:
             print(e)
             return 
@@ -221,7 +221,7 @@ class FileInput():
     
     def InputGetDicForDel(self, fileName="1"):
         try:
-            book = xlrd.open_workbook("tempdata\\"+fileName+".xls")
+            book = xlrd.open_workbook("tempdata\\preprocessed %s.xls"%fileName)
         except Exception as e:
             print(e)
             return 
@@ -233,6 +233,14 @@ class FileInput():
             colIndex += 1
         return dic
 
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

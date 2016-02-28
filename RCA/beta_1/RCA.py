@@ -72,8 +72,6 @@ def getParameters():
     # IGLIMIT=0.1, ratio=3, path="tempdata", labelIndex=1, fileName="1", filteredFea
     #===========================================================================
     
-    
-    
     reader = open("settings\\parameters.txt","r")
     IGLIMIT = float(reader.readline()[len("IGLIMIT : "):])
     ratio = float(reader.readline()[len("ratio : "):])
@@ -118,8 +116,6 @@ def IsFormatSame(path="", fileName=""):
     return True
     
 
-
-
 def main():
     #===========================================================================
     # 此处的处理逻辑存在较大的安全隐患，即对训练结果出现极端情况时丧失处理能力
@@ -143,17 +139,17 @@ def main():
     if(not FileInput().DataPreprocess(path, fileName)):
         return
     
-    print("IGLIMIT:%f\nratio:%f\npath:%s\nfileName:%s\nlabelIndex:%d"%(IGLIMIT,ratio,path,fileName,labelIndex))
-    print("filteredFea:",filteredFea)
+    print("\n\n=============================================================\n\nparameters information\nIGLIMIT : %f\nratio : %f\npath : %s\nfileName : %s\nlabelIndex : %d"%(IGLIMIT,ratio,path,fileName,labelIndex))
+    print("filteredFea :",filteredFea)
     while(not Found):
-        print("\n\n\n\n")
+        print("\n\n=============================================================\n\ntraining information")
         showTime()
         print("IGLIMIT:%f, ratio:%f"%(IGLIMIT,ratio))
         rootCause = RCA(IGLIMIT, ratio, labelIndex, fileName, filteredFea)
         prediction1 = {}
         for item in rootCause[:]:
             prediction1[item[0]] = item[1]
-        for i in range(2):
+        for i in range(1):
             rootCause = RCA(IGLIMIT,ratio, labelIndex, fileName, filteredFea)
             prediction2 = {}
             for item in rootCause[:]:
@@ -165,22 +161,18 @@ def main():
                     print("the model cannot work")
                     return
                 break
-            if(i==1):
+            if(i==0):
                 Found = True
     showTime()
     labelDic = FileInput().InputGetDicForDel(fileName)
     result = sorted(prediction1.items(), key = lambda x:x[1], reverse=True)
-    print("the final result for root cause recommendation")
+    print("\n\n=============================================================\n\n\nthe final result for root cause recommendation")
     for item in result:
-        print(item, labelDic[item[0]])
+        print([item[0], item[1], labelDic[item[0]]])
     
     return 
 
-
-
 if __name__=="__main__":
-    #IsFormatSame("C:\\Users\\YANG\\Desktop\\Data", "1")
     main()
-    
 
 
