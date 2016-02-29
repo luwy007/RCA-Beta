@@ -1,6 +1,6 @@
-IGLIMIT : 0.1
-ratio : 3
-path : C:\Users\YANG\Desktop\Data
-fileName : data
-KPI : 5
-filteredFea : []
+IGLIMIT : "0.1"
+ratio : "3"
+path : "C:\Users\YANG\Desktop\Data"
+fileName : "data"
+KPI : "5"
+filteredFea : "[1,2]"

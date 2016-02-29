@@ -73,13 +73,13 @@ def getParameters():
     #===========================================================================
     
     reader = open("settings\\parameters.txt","r")
-    IGLIMIT = float(reader.readline()[len("IGLIMIT : "):])
-    ratio = float(reader.readline()[len("ratio : "):])
-    path = reader.readline()[len("path : "):].strip()
-    fileName = reader.readline()[len("fileName : "):].strip()
-    labelIndex = int(reader.readline()[len("KPI : "):])
+    IGLIMIT = float(reader.readline().strip()[len("IGLIMIT : ")+1:-1])
+    ratio = float(reader.readline().strip()[len("ratio : ")+1:-1])
+    path = reader.readline().strip()[len("path : ")+1:-1]
+    fileName = reader.readline().strip()[len("fileName : ")+1:-1]
+    labelIndex = int(reader.readline().strip()[len("KPI : ")+1:-1])
     filteredFea = []
-    items = reader.readline()[len("filteredFea : "):].strip()[1:-1].split(",")
+    items = reader.readline().strip()[len("filteredFea : ")+2:-2].split(",")
     for item in items:
         try:
             filteredFea.append(int(item))
@@ -174,5 +174,6 @@ def main():
 
 if __name__=="__main__":
     main()
-
+    l= "\"nihao\"\n"
+    print(l[1:-1])
 
