@@ -19,13 +19,12 @@ DATA INFO
 
 '''
 
-from RCA_Predict import RCA_Predict
-from RCA_Train import RCA_Train
-from FileInput import FileInput
+from Beta_1.RCA_Predict import RCA_Predict
+from Beta_1.RCA_Train import RCA_Train
+from Beta_1.FileInput import FileInput
 import time
 import xlrd
 import pickle
-
 def RCA(IGLIMIT=0.1, ratio=3, labelIndex=1, fileName="1", filteredFea=[]):
     
     
@@ -175,4 +174,6 @@ def main():
 
 if __name__=="__main__":
     main()
+    l= "\"nihao\"\n"
+    print(l[1:-1])
 

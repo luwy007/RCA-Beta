@@ -4,7 +4,7 @@ Created on 2016/2/18
 
 @author: YANG
 '''
-from FileInput import FileInput
+from Beta_1.FileInput import FileInput
 import math
 import pickle
 import os

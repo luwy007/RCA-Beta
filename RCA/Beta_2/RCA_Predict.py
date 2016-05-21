@@ -4,12 +4,11 @@ Created on 2016年2月19日
 
 @author: YANG
 '''
-
-from FileInput import FileInput 
+from Beta_1.FileInput import FileInput 
 import os
 import pickle
 import math
-from RCA_Train import RCA_Train 
+from Beta_1.RCA_Train import RCA_Train 
 
 class RCA_Predict:
     
@@ -100,7 +99,6 @@ class RCA_Predict:
         
         return rootCause
         
-    
     def VisualizeTree(self):
         print("nodes of the tree is %i"%len(self.tree))
         height = -1

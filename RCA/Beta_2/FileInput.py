@@ -61,7 +61,7 @@ class FileInput():
             mode = "0\n" # 众数，设置为0，以便于将NIL过多的特征剔除
             
 
-            if(NILCount<sheet.nrows*0.1):
+            if(NILCount<sheet.nrows*0.02):
                 count = 0
                 for item in itemDic:
                     if(itemDic[item]>count):
@@ -79,8 +79,7 @@ class FileInput():
                         
         book.save("tempdata\\preprocessed %s.xls"%fileName)
         return True
-
-        
+ 
     def InputForTrain(self, fileName="1", cols=[-2]*61):
         '''
         #参数说明
@@ -234,47 +233,29 @@ class FileInput():
         return dic
 
     
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
-
-
+ 
