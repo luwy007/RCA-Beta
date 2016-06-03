@@ -290,12 +290,9 @@ class RCA_Train():
                   (SmallerSum/(LargerSum+SmallerSum))*SmallerEntropy
         
         return entropy, SmallerEntropy, LargerEntropy
- 
-    def Pruning(self):
-        
-        pass
+
     
-     
+    
      
 
 
